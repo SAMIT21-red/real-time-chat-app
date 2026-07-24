@@ -1,6 +1,8 @@
 import { Client } from "@stomp/stompjs";
 import SockJS from "sockjs-client/dist/sockjs";
 
+const BACKEND_URL = "https://real-time-chat-app-t1s1.onrender.com";
+
 let stompClient = null;
 
 export const connectSocket = (
@@ -10,9 +12,8 @@ export const connectSocket = (
   onUsersReceived,
   onSystemMessage
 ) => {
-
   stompClient = new Client({
-    webSocketFactory: () => new SockJS("http://localhost:8080/chat"),
+    webSocketFactory: () => new SockJS(`${BACKEND_URL}/chat`),
 
     reconnectDelay: 5000,
 
@@ -26,7 +27,7 @@ export const connectSocket = (
         }
       });
 
-      // Typing
+      // Typing Indicator
       stompClient.subscribe(`/topic/typing/${roomId}`, (message) => {
         if (onTypingReceived) {
           onTypingReceived(JSON.parse(message.body));
@@ -39,13 +40,13 @@ export const connectSocket = (
           onUsersReceived(JSON.parse(message.body));
         }
       });
+
+      // System Messages
       stompClient.subscribe(`/topic/system/${roomId}`, (message) => {
-
-    if (onSystemMessage) {
-        onSystemMessage(JSON.parse(message.body));
-    }
-
-});
+        if (onSystemMessage) {
+          onSystemMessage(JSON.parse(message.body));
+        }
+      });
     },
 
     onStompError: (frame) => {
@@ -61,18 +62,15 @@ export const connectSocket = (
 };
 
 export const sendMessage = (roomId, message) => {
-
   if (!stompClient?.connected) return;
 
   stompClient.publish({
     destination: `/app/sendMessage/${roomId}`,
     body: JSON.stringify(message),
   });
-
 };
 
 export const joinRoom = (roomId, username) => {
-
   if (!stompClient?.connected) return;
 
   stompClient.publish({
@@ -81,11 +79,9 @@ export const joinRoom = (roomId, username) => {
       username,
     }),
   });
-
 };
 
 export const leaveRoom = (roomId, username) => {
-
   if (!stompClient?.connected) return;
 
   stompClient.publish({
@@ -94,11 +90,9 @@ export const leaveRoom = (roomId, username) => {
       username,
     }),
   });
-
 };
 
 export const sendTyping = (roomId, sender, typing) => {
-
   if (!stompClient?.connected) return;
 
   stompClient.publish({
@@ -108,14 +102,11 @@ export const sendTyping = (roomId, sender, typing) => {
       typing,
     }),
   });
-
 };
 
 export const disconnectSocket = () => {
-
   if (stompClient) {
     stompClient.deactivate();
     stompClient = null;
   }
-
 };
